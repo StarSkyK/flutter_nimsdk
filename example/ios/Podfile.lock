@@ -1,0 +1,29 @@
+PODS:
+  - Flutter (1.0.0)
+  - flutter_nimsdk (0.0.1):
+    - Flutter
+    - NIMSDK
+  - NIMSDK (6.9.1)
+
+DEPENDENCIES:
+  - Flutter (from `Flutter`)
+  - flutter_nimsdk (from `.symlinks/plugins/flutter_nimsdk/ios`)
+
+SPEC REPOS:
+  trunk:
+    - NIMSDK
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: Flutter
+  flutter_nimsdk:
+    :path: ".symlinks/plugins/flutter_nimsdk/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  flutter_nimsdk: 86e220da2d23c174874d308885ae8195b4a1c8a2
+  NIMSDK: 52ce92caa6d8f783eca25bf09e7901752abb7c25
+
+PODFILE CHECKSUM: 1b66dae606f75376c5f2135a8290850eeb09ae83
+
+COCOAPODS: 1.8.4
