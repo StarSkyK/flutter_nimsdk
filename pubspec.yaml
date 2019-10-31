@@ -1,6 +1,6 @@
 name: flutter_nimsdk
-description: A new flutter plugin project.
-version: 0.0.1
+description: 网易云信的 flutter 插件
+version: 0.0.2
 author: ZJQian <2326274522@qq.com>
 homepage: https://github.com/ZJQian/flutter_nimsdk
 
@@ -10,7 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
   json_annotation: ^3.0.0
 
 dev_dependencies:

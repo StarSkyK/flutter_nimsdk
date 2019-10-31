@@ -1,5 +1,5 @@
 #import "FlutterNimsdkPlugin.h"
-#import <flutter_nimsdk/flutter_nimsdk-Swift.h>
+//#import <flutter_nimsdk/flutter_nimsdk-Swift.h>
 #import <NIMSDK/NIMSDK.h>
 #import <NIMAVChat/NIMAVChat.h>
 
@@ -49,7 +49,11 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
             NIMNetCallVideoCaptureParam *param = [[NIMNetCallVideoCaptureParam alloc] init];
             option.videoCaptureParam = param;
             
-            [[NIMAVChatSDK sharedSDK].netCallManager response:0 accept:YES option:option completion:^(NSError * _Nullable error, UInt64 callID) {
+            NSDictionary *args = call.arguments;
+            int callID = [NSString stringWithFormat:@"%@",args[@"callID"]].intValue;
+            BOOL accept = [NSString stringWithFormat:@"%@",args[@"accept"]].boolValue;
+            
+            [[NIMAVChatSDK sharedSDK].netCallManager response:callID accept:accept option:option completion:^(NSError * _Nullable error, UInt64 callID) {
                 
                 //链接成功
                 if (!error) {

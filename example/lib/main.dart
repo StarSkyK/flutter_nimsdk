@@ -84,7 +84,9 @@ class _MyAppState extends State<MyApp> {
 
   ///被叫响应通话请求
   void response() async {
-    await _methodChannelPlugin.invokeMethod('response', {"msg": 'flutter 向 native 发送的消息'});
+
+    NIMResponse nimResponse = NIMResponse(callID: 0,accept: true);
+    await _methodChannelPlugin.invokeMethod('response', nimResponse.toJson());
   }
 
   /// 挂断

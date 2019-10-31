@@ -247,3 +247,16 @@ Map<String, dynamic> _$NIMNetCallOptionToJson(NIMNetCallOption instance) => <Str
       'apnsContent': instance.apnsContent,
       'apnsSound': instance.apnsSound
     };
+
+
+NIMResponse _$NIMResponseFromJson(Map<String, dynamic> json) {
+  return NIMResponse(
+    callID: json['callID'] as int,
+    accept: json['accept'] as bool
+  );
+}
+
+Map<String, dynamic> _$NIMResponseToJson(NIMResponse instance) => <String, dynamic>{
+      'callID': instance.callID,
+      'accept': instance.accept
+    };

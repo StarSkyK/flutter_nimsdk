@@ -357,3 +357,15 @@ class NIMNetCallOption {
   factory NIMNetCallOption.fromJson(Map<String, dynamic> json) => _$NIMNetCallOptionFromJson(json);
   Map<String, dynamic> toJson() => _$NIMNetCallOptionToJson(this);
 }
+
+@JsonSerializable()
+class NIMResponse {
+
+  final int callID;
+  final bool accept;
+
+  NIMResponse({this.callID,this.accept});
+
+  factory NIMResponse.fromJson(Map<String, dynamic> json) => _$NIMResponseFromJson(json);
+  Map<String, dynamic> toJson() => _$NIMResponseToJson(this);
+}
