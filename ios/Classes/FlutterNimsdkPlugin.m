@@ -3,10 +3,21 @@
 #import <NIMSDK/NIMSDK.h>
 #import <NIMAVChat/NIMAVChat.h>
 
-@interface FlutterNimsdkPlugin()<NIMLoginManagerDelegate,FlutterStreamHandler,NIMNetCallManagerDelegate>
+@interface FlutterNimsdkPlugin()<NIMLoginManagerDelegate,
+                                 FlutterStreamHandler,
+                                 NIMNetCallManagerDelegate,
+                                 NIMConversationManagerDelegate,
+                                 NIMMediaManagerDelegate>
 
 @property(nonatomic) FlutterEventSink eventSink;
 @property(nonatomic, strong) FlutterMethodChannel *methodChannel;
+@property(nonatomic, strong) NSMutableArray *sessions;
+
+/// 录音时长
+@property(nonatomic, assign) NSTimeInterval recordTime;
+
+/// sessionID
+@property(nonatomic, copy) NSString *sessionID;
 
 @end
 
@@ -265,10 +276,165 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
         //开启静音 YES  关闭静音 No
         [[NIMAVChatSDK sharedSDK].netCallManager setMute:isMute];
         
+    } else if ([@"mostRecentSessions" isEqualToString:call.method]) {
+        
+        NSArray *recentSessions = [NIMSDK sharedSDK].conversationManager.mostRecentSessions;
+        self.sessions = [NSMutableArray arrayWithArray:recentSessions];
+        result(recentSessions);
+        
+    }else if ([@"allRecentSessions" isEqualToString:call.method]) {
+        
+        NSArray *recentSessions = [NIMSDK sharedSDK].conversationManager.allRecentSessions;
+        self.sessions = [NSMutableArray arrayWithArray:recentSessions];
+        result(recentSessions);
+        
+    }else if ([@"deleteRecentSession" isEqualToString:call.method]) {
+        
+        NSDictionary *args = call.arguments;
+        NSString *sessionID = args[@"sessionID"];
+        for (NIMRecentSession *session in self.sessions) {
+            if ([session.session.sessionId isEqualToString:sessionID]) {
+                [[NIMSDK sharedSDK].conversationManager deleteRecentSession:session];
+            }
+        }
+        
+    }else if ([@"sendTextMessage" isEqualToString:call.method]) {//文本
+        
+        [self sendMessage:NIMMessageTypeText args:call.arguments];
+        
+    }else if ([@"sendTipMessage" isEqualToString:call.method]) {//提示
+        
+        [self sendMessage: NIMMessageTypeTip args:call.arguments];
+        
+    }else if ([@"sendImageMessage" isEqualToString:call.method]) {//图片
+        
+        [self sendMessage:NIMMessageTypeImage args:call.arguments];
+        
+    }else if ([@"sendVideoMessage" isEqualToString:call.method]) {//视频
+        
+        [self sendMessage:NIMMessageTypeVideo args:call.arguments];
+        
+    }else if ([@"sendAudioMessage" isEqualToString:call.method]) {//音频
+        
+        [self sendMessage:NIMMessageTypeAudio args:call.arguments];
+        
+    }else if ([@"sendFileMessage" isEqualToString:call.method]) {//文件
+        
+        [self sendMessage: NIMMessageTypeFile args:call.arguments];
+        
+    }else if ([@"sendLocationMessage" isEqualToString:call.method]) {//位置
+        
+        [self sendMessage: NIMMessageTypeLocation args:call.arguments];
+        
+    }else if ([@"onStartRecording" isEqualToString:call.method]) {//录音
+        
+        self.sessionID = call.arguments[@"sessionId"];
+        [[[NIMSDK sharedSDK] mediaManager] addDelegate:self];
+        [[[NIMSDK sharedSDK] mediaManager] record:NIMAudioTypeAAC duration:60.0];
+        
+    }else if ([@"onStopRecording" isEqualToString:call.method]) {//结束录音
+        
+        self.sessionID = call.arguments[@"sessionId"];
+        [[[NIMSDK sharedSDK] mediaManager] stopRecord];
+        
+    }else if ([@"onCancelRecording" isEqualToString:call.method]) {//取消录音
+       
+        self.sessionID = call.arguments[@"sessionId"];
+        [[[NIMSDK sharedSDK] mediaManager] cancelRecord];
+        
     } else {
         result(FlutterMethodNotImplemented);
     }
 }
+
+- (void)sendMessage:(NIMMessageType)messageType args:(NSDictionary *)args {
+    
+    NSDictionary *sessionDic = args[@"nimSession"];
+    NSString *sessionID = sessionDic[@"sessionId"];
+    int type = [NSString stringWithFormat:@"%@",args == nil ? @"0" : sessionDic[@"sessionType"]].intValue;
+    NIMSessionType sessionType = NIMSessionTypeP2P;
+    if (type == 3) {
+        sessionType = NIMSessionTypeSuperTeam;
+    }else {
+        sessionType = type;
+    }
+    
+    // 构造出具体会话
+    NIMSession *session = [NIMSession session:sessionID type:sessionType];
+    // 构造出具体消息
+    NIMMessage *message = [[NIMMessage alloc] init];
+    
+    if (messageType == NIMMessageTypeText) {
+        message.text        = args[@"message"];
+        NSError *error = nil;
+        [[NIMSDK sharedSDK].chatManager sendMessage:message toSession:session error:&error];
+    }else if (messageType == NIMMessageTypeImage) {
+        
+        // 获得图片附件对象
+        NIMImageObject *object = [[NIMImageObject alloc] initWithFilepath:args[@"imagePath"]];
+        message.messageObject        = object;
+        NSError *error = nil;
+        [[NIMSDK sharedSDK].chatManager sendMessage:message toSession:session error:&error];
+    }else if (messageType == NIMMessageTypeVideo) {
+        
+        // 获得视频附件对象
+        NIMVideoObject *object = [[NIMVideoObject alloc] initWithSourcePath:args[@"videoPath"]];
+        message.messageObject        = object;
+        NSError *error = nil;
+        [[NIMSDK sharedSDK].chatManager sendMessage:message toSession:session error:&error];
+    }else if (messageType == NIMMessageTypeAudio) {
+        
+        // 获得音附件对象
+        NIMAudioObject *object = [[NIMAudioObject alloc] initWithSourcePath:args[@"audioPath"]];
+        message.messageObject        = object;
+        NSError *error = nil;
+        [[NIMSDK sharedSDK].chatManager sendMessage:message toSession:session error:&error];
+    }else if (messageType == NIMMessageTypeFile) {
+        
+        // 获得文件附件对象
+         NIMFileObject *object = [[NIMFileObject alloc] initWithSourcePath:args[@"filePath"]];
+        message.messageObject        = object;
+        NSError *error = nil;
+        [[NIMSDK sharedSDK].chatManager sendMessage:message toSession:session error:&error];
+    }else if (messageType == NIMMessageTypeLocation) {
+        
+        // 获得位置附件对象
+        NSDictionary *locationDic = args[@"locationObject"];
+        double latitude = [NSString stringWithFormat:@"%@",locationDic[@"latitude"]].doubleValue;
+        double longitude = [NSString stringWithFormat:@"%@",locationDic[@"longitude"]].doubleValue;
+        NSString *title = [NSString stringWithFormat:@"%@",locationDic[@"title"]];
+        NIMLocationObject *object = [[NIMLocationObject alloc] initWithLatitude:latitude longitude:longitude title:title];
+        message.messageObject = object;
+        NSError *error = nil;
+        [[NIMSDK sharedSDK].chatManager sendMessage:message toSession:session error:&error];
+    }else if (messageType == NIMMessageTypeTip) {
+        
+         // 获得文件附件对象
+        NIMTipObject *object = [[NIMTipObject alloc] init];
+        message.messageObject        = object;
+        message.text = args[@"message"];
+        NSError *error = nil;
+        [[NIMSDK sharedSDK].chatManager sendMessage:message toSession:session error:&error];
+    }
+}
+
+
+/// 发送音频消息
+/// @param filePath 文件地址
+- (void)sendAudioMessage:(NSString *)filePath {
+    
+    // 构造出具体会话
+    NIMSession *session = [NIMSession session:self.sessionID type:NIMSessionTypeP2P];
+    // 构造出具体消息
+    NIMMessage *message = [[NIMMessage alloc] init];
+    NIMAudioObject *object = [[NIMAudioObject alloc] initWithSourcePath:filePath];
+    message.messageObject = object;
+    NSError *error = nil;
+    [[NIMSDK sharedSDK].chatManager sendMessage:message toSession:session error:&error];
+}
+
+
+
 
 // MARK: - NIMLoginManagerDelegate
 - (void)onLogin:(NIMLoginStep)step {
@@ -359,6 +525,96 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
     }
 }
 
+// MARK: - NIMConversationManagerDelegate
+
+/**
+ *  增加最近会话的回调
+ *
+ *  @param recentSession    最近会话
+ *  @param totalUnreadCount 目前总未读数
+ *  @discussion 当新增一条消息，并且本地不存在该消息所属的会话时，会触发此回调。
+ */
+- (void)didAddRecentSession:(NIMRecentSession *)recentSession
+           totalUnreadCount:(NSInteger)totalUnreadCount {
+    
+    if (self.eventSink) {
+        self.eventSink(@{@"msg": @"增加最近会话的回调"});
+    }
+    
+}
+
+/**
+ *  最近会话修改的回调
+ *
+ *  @param recentSession    最近会话
+ *  @param totalUnreadCount 目前总未读数
+ *  @discussion 触发条件包括: 1.当新增一条消息，并且本地存在该消息所属的会话。
+ *                          2.所属会话的未读清零。
+ *                          3.所属会话的最后一条消息的内容发送变化。(例如成功发送后，修正发送时间为服务器时间)
+ *                          4.删除消息，并且删除的消息为当前会话的最后一条消息。
+ */
+- (void)didUpdateRecentSession:(NIMRecentSession *)recentSession
+              totalUnreadCount:(NSInteger)totalUnreadCount {
+    
+    if (self.eventSink) {
+        self.eventSink(@{@"msg": @"最近会话修改的回调"});
+    }
+    
+}
+
+/**
+ *  删除最近会话的回调
+ *
+ *  @param recentSession    最近会话
+ *  @param totalUnreadCount 目前总未读数
+ */
+- (void)didRemoveRecentSession:(NIMRecentSession *)recentSession
+              totalUnreadCount:(NSInteger)totalUnreadCount {
+    
+    if (self.eventSink) {
+        self.eventSink(@{@"msg": @"删除最近会话的回调"});
+    }
+}
+
+// MARK: - NIMMediaManagerDelegate
+
+
+/// 开始录音
+/// @param filePath 路径
+- (void)recordAudio:(NSString *)filePath didBeganWithError:(NSError *)error {
+    self.recordTime = 0;
+}
+
+/// 录音中
+/// @param currentTime 录音时长
+- (void)recordAudioProgress:(NSTimeInterval)currentTime {
+    self.recordTime = currentTime;
+}
+
+
+/// 取消录音
+- (void)recordAudioDidCancelled {
+    self.recordTime = 0;
+}
+
+- (void)recordAudio:(NSString *)filePath didCompletedWithError:(NSError *)error {
+    
+    if (error == nil && filePath != nil) {
+        if (self.recordTime > 1) {
+            
+            [self sendAudioMessage:filePath];
+        } else {
+            NSLog(@"说话时间太短");
+            if (self.eventSink) {
+                self.eventSink(@{@"msg":@"说话时间太短"});
+            }
+        }
+    }
+}
+
+- (void)recordAudioInterruptionBegin {
+    [[[NIMSDK sharedSDK] mediaManager] cancelRecord];
+}
 
     
 -(void)getValue:(NSDictionary*)dict key:(NSString*) key :(void(^)(id result))block{
@@ -369,5 +625,11 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
     block(value);
 }
 
+- (NSMutableArray *)sessions {
+    if (!_sessions) {
+        _sessions = [NSMutableArray array];
+    }
+    return _sessions;
+}
 
 @end

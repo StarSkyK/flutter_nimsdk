@@ -260,3 +260,29 @@ Map<String, dynamic> _$NIMResponseToJson(NIMResponse instance) => <String, dynam
       'callID': instance.callID,
       'accept': instance.accept
     };
+
+NIMSession _$NIMSessionFromJson(Map<String, dynamic> json) {
+  return NIMSession(
+    sessionId: json['sessionId'] as String,
+    sessionType: json['sessionType'] as int
+  );
+}
+
+Map<String, dynamic> _$NIMSessionToJson(NIMSession instance) => <String, dynamic>{
+      'sessionId': instance.sessionId,
+      'sessionType': instance.sessionType
+    };
+
+NIMLocationObject _$NIMLocationObjectFromJson(Map<String, dynamic> json) {
+  return NIMLocationObject(
+    latitude: json['latitude'] as double,
+    longitude: json['longitude'] as double,
+    title: json['title'] as String,
+  );
+}
+
+Map<String, dynamic> _$NIMLocationObjectToJson(NIMLocationObject instance) => <String, dynamic>{
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
+      'title': instance.title
+    };

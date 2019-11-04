@@ -17,7 +17,7 @@ void main() {
     channel.setMockMethodCallHandler(null);
   });
 
-  test('getPlatformVersion', () async {
-    expect(await FlutterNimsdk.platformVersion, '42');
-  });
+  // test('getPlatformVersion', () async {
+  //   expect(await FlutterNimsdk.platformVersion, '42');
+  // });
 }

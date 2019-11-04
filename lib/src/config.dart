@@ -1,6 +1,7 @@
 import 'package:json_annotation/json_annotation.dart';
-
+import 'enum.dart';
 part 'config.g.dart';
+
 
 ///可自定义的SDK选项设置
 @JsonSerializable()
@@ -368,4 +369,29 @@ class NIMResponse {
 
   factory NIMResponse.fromJson(Map<String, dynamic> json) => _$NIMResponseFromJson(json);
   Map<String, dynamic> toJson() => _$NIMResponseToJson(this);
+}
+
+@JsonSerializable()
+class NIMSession {
+
+  final String sessionId;
+  final int sessionType;
+
+  NIMSession({this.sessionId,this.sessionType});
+
+  factory NIMSession.fromJson(Map<String, dynamic> json) => _$NIMSessionFromJson(json);
+  Map<String, dynamic> toJson() => _$NIMSessionToJson(this);
+}
+
+@JsonSerializable()
+class NIMLocationObject {
+
+  final double latitude;
+  final double longitude;
+  final String title;
+
+  NIMLocationObject({this.latitude,this.longitude,this.title});
+
+  factory NIMLocationObject.fromJson(Map<String, dynamic> json) => _$NIMLocationObjectFromJson(json);
+  Map<String, dynamic> toJson() => _$NIMLocationObjectToJson(this);
 }
