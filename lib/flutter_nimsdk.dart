@@ -123,12 +123,12 @@ class FlutterNimsdk {
 
   /// IM 
   /// 最近会话列表
-  Future<List<NIMRecentSession>> mostRecentSessions() async {
+  Future<Map> mostRecentSessions() async {
 
     return await _channel.invokeMethod("mostRecentSessions");
   }
   /// 获取所有最近会话
-  Future<List<NIMRecentSession>> allRecentSessions() async {
+  Future<Map> allRecentSessions() async {
 
     return await _channel.invokeMethod("allRecentSessions");
   }

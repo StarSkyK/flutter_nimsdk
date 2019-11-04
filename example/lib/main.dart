@@ -34,6 +34,23 @@ class _MyAppState extends State<MyApp> {
   //数据接收
   void _onEvent(Object value) {
     print(value);
+
+    /**
+     * delegateType 的值对应的回调
+     * 
+     * 
+     * NIMDelegateTypeOnLogin = 0,
+     * NIMDelegateTypeOnReceive = 1,
+     * NIMDelegateTypeOnResponse = 2,
+     * NIMDelegateTypeOnCallEstablished = 3,
+     * NIMDelegateTypeOnHangup = 4,
+     * NIMDelegateTypeOnCallDisconnected = 5,
+     * NIMDelegateTypeDidAddRecentSession = 6,
+     * NIMDelegateTypeDidUpdateRecentSession = 7,
+     * NIMDelegateTypeDidRemoveRecentSession = 8,
+     * NIMDelegateTypeRecordAudioComplete = 9,
+     */
+
   }
   // 错误处理
   void _onError(dynamic) {
@@ -112,6 +129,15 @@ class _MyAppState extends State<MyApp> {
   /// 设置静音
   void setMute() async {
     await FlutterNimsdk().setMute(false);
+  }
+
+  /// 获取最近会话列表
+  void getRecentList() async {
+
+    FlutterNimsdk().mostRecentSessions().then((result) {
+
+      print(result);
+    });
   }
 
   /// 发送文本消息
@@ -196,6 +222,12 @@ class _MyAppState extends State<MyApp> {
                   this.setMute();
                 },
                 child: Text("设置静音"),
+              ),
+              RaisedButton(
+                onPressed: (){
+                  this.getRecentList();
+                },
+                child: Text("获取最近消息列表"),
               ),
               RaisedButton(
                 onPressed: (){

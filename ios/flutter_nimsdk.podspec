@@ -4,8 +4,8 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'flutter_nimsdk'
-  s.version          = '0.0.1'
-  s.summary          = 'A new flutter plugin project.'
+  s.version          = '0.0.5'
+  s.summary          = '网易云信的 flutter 版插件'
   s.description      = <<-DESC
 A new flutter plugin project.
                        DESC
@@ -17,6 +17,7 @@ A new flutter plugin project.
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
   s.dependency 'NIMSDK'
+  s.dependency 'MJExtension'
   
   s.platform = :ios, '8.0'
 

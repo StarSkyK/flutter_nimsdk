@@ -1,7 +1,6 @@
 name: flutter_nimsdk
 description: 网易云信的 flutter 插件
-version: 0.0.4
-author: ZJQian <2326274522@qq.com>
+version: 0.0.5
 homepage: https://github.com/ZJQian/flutter_nimsdk
 
 environment:

@@ -1,7 +1,20 @@
 #import "FlutterNimsdkPlugin.h"
-//#import <flutter_nimsdk/flutter_nimsdk-Swift.h>
 #import <NIMSDK/NIMSDK.h>
 #import <NIMAVChat/NIMAVChat.h>
+#import <MJExtension/MJExtension.h>
+
+typedef enum : NSUInteger {
+    NIMDelegateTypeOnLogin = 0,
+    NIMDelegateTypeOnReceive = 1,
+    NIMDelegateTypeOnResponse = 2,
+    NIMDelegateTypeOnCallEstablished = 3,
+    NIMDelegateTypeOnHangup = 4,
+    NIMDelegateTypeOnCallDisconnected = 5,
+    NIMDelegateTypeDidAddRecentSession = 6,
+    NIMDelegateTypeDidUpdateRecentSession = 7,
+    NIMDelegateTypeDidRemoveRecentSession = 8,
+    NIMDelegateTypeRecordAudioComplete = 9,
+} NIMDelegateType;
 
 @interface FlutterNimsdkPlugin()<NIMLoginManagerDelegate,
                                  FlutterStreamHandler,
@@ -233,9 +246,9 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
             if (!error) {
                 NSMutableArray *recordArray = [NSMutableArray array];
                 for (NIMMessage *msg in records) {
-                    NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-                    [dict setObject:msg.messageId forKey:@"messageId"];
-                    [dict setObject:[NSNumber numberWithInteger:msg.messageType] forKey:@"messageType"];
+                    
+                    msg.messageObject = nil;
+                    NSMutableDictionary *dict = [msg mj_keyValues];
                     [recordArray addObject:dict];
                 }
                 NSDictionary *dic = @{@"records": recordArray};
@@ -280,13 +293,29 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
         
         NSArray *recentSessions = [NIMSDK sharedSDK].conversationManager.mostRecentSessions;
         self.sessions = [NSMutableArray arrayWithArray:recentSessions];
-        result(recentSessions);
+        NSMutableArray *array = [NSMutableArray array];
+        for (NIMRecentSession *session in recentSessions) {
+            session.lastMessage.messageObject = nil;
+            NSMutableDictionary *tempDic = [session mj_keyValues];
+            
+            [array addObject:tempDic];
+        }
+        NSDictionary *dic = @{@"mostRecentSessions": array};
+        result(dic);
         
     }else if ([@"allRecentSessions" isEqualToString:call.method]) {
         
         NSArray *recentSessions = [NIMSDK sharedSDK].conversationManager.allRecentSessions;
         self.sessions = [NSMutableArray arrayWithArray:recentSessions];
-        result(recentSessions);
+        NSMutableArray *array = [NSMutableArray array];
+        for (NIMRecentSession *session in recentSessions) {
+            session.lastMessage.messageObject = nil;
+            NSMutableDictionary *tempDic = [session mj_keyValues];
+            
+            [array addObject:tempDic];
+        }
+        NSDictionary *dic = @{@"allRecentSessions": array};
+        result(dic);
         
     }else if ([@"deleteRecentSession" isEqualToString:call.method]) {
         
@@ -440,7 +469,8 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
 - (void)onLogin:(NIMLoginStep)step {
     
     if (self.eventSink) {
-        self.eventSink(@{@"delegate": @"NIMLoginManagerDelegate",@"step": [NSNumber numberWithInteger:step]});
+        self.eventSink(@{@"delegateType": [NSNumber numberWithInteger:NIMDelegateTypeOnLogin],
+                         @"step": [NSNumber numberWithInteger:NIMDelegateTypeOnLogin]});
     }
 }
 
@@ -460,7 +490,7 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
 //被叫收到呼叫
 - (void)onReceive:(UInt64)callID from:(NSString *)caller type:(NIMNetCallMediaType)type message:(NSString *)extendMessage {
     if (self.eventSink) {
-        NSDictionary *dic = @{@"delegate": @"NIMNetCallManagerDelegate",
+        NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeOnReceive],
                               @"callID": [NSNumber numberWithInteger:callID],
                               @"caller": caller,
                               @"type": [NSNumber numberWithInteger:type],
@@ -474,7 +504,9 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
     
     if (self.eventSink) {
         
-        NSDictionary *dic = @{@"delegate": @"NIMNetCallManagerDelegate",
+        NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeOnResponse],
+                              @"callID": [NSNumber numberWithInteger:callID],
+                              @"callee": callee,
                               @"accepted": [NSNumber numberWithBool:accepted]};
         self.eventSink(dic);
     }
@@ -488,7 +520,7 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
     
     if (self.eventSink) {
         
-        NSDictionary *dic = @{@"delegate": @"NIMNetCallManagerDelegate",
+        NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeOnCallEstablished],
                               @"callID": [NSNumber numberWithInteger:callID]};
         self.eventSink(dic);
     }
@@ -499,7 +531,7 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
     
     if (self.eventSink) {
         
-        NSDictionary *dic = @{@"delegate": @"NIMNetCallManagerDelegate",
+        NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeOnHangup],
                               @"callID": [NSNumber numberWithInteger:callID],
                               @"user": user};
         self.eventSink(dic);
@@ -518,7 +550,7 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
     if (self.eventSink) {
         
         NSString *msg = error.userInfo[@"NSLocalizedDescription"] == nil ? @"通话异常" : error.userInfo[@"NSLocalizedDescription"];
-        NSDictionary *dic = @{@"delegate": @"NIMNetCallManagerDelegate",
+        NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeOnCallDisconnected],
                               @"callID": [NSNumber numberWithInteger:callID],
                               @"error": msg};
         self.eventSink(dic);
@@ -538,7 +570,13 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
            totalUnreadCount:(NSInteger)totalUnreadCount {
     
     if (self.eventSink) {
-        self.eventSink(@{@"msg": @"增加最近会话的回调"});
+        
+        recentSession.lastMessage.messageObject = nil;
+        NSDictionary *tempDic = [recentSession mj_keyValues];
+        NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeDidAddRecentSession],
+                              @"totalUnreadCount": [NSNumber numberWithInteger:totalUnreadCount],
+                              @"recentSession": tempDic};
+        self.eventSink(dic);
     }
     
 }
@@ -557,7 +595,12 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
               totalUnreadCount:(NSInteger)totalUnreadCount {
     
     if (self.eventSink) {
-        self.eventSink(@{@"msg": @"最近会话修改的回调"});
+        recentSession.lastMessage.messageObject = nil;
+        NSDictionary *tempDic = [recentSession mj_keyValues];
+        NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeDidUpdateRecentSession],
+                              @"totalUnreadCount": [NSNumber numberWithInteger:totalUnreadCount],
+                              @"recentSession": tempDic};
+        self.eventSink(dic);
     }
     
 }
@@ -572,7 +615,12 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
               totalUnreadCount:(NSInteger)totalUnreadCount {
     
     if (self.eventSink) {
-        self.eventSink(@{@"msg": @"删除最近会话的回调"});
+        recentSession.lastMessage.messageObject = nil;
+        NSDictionary *tempDic = [recentSession mj_keyValues];
+        NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeDidRemoveRecentSession],
+                              @"totalUnreadCount": [NSNumber numberWithInteger:totalUnreadCount],
+                              @"recentSession": tempDic};
+        self.eventSink(dic);
     }
 }
 
@@ -606,7 +654,9 @@ static NSString *const kMethodChannelName = @"flutter_nimsdk/Method/Channel";
         } else {
             NSLog(@"说话时间太短");
             if (self.eventSink) {
-                self.eventSink(@{@"msg":@"说话时间太短"});
+                NSDictionary *dic = @{@"delegateType": [NSNumber numberWithInt:NIMDelegateTypeRecordAudioComplete],
+                                      @"msg": @"说话时间太短"};
+                self.eventSink(dic);
             }
         }
     }
